@@ -81,10 +81,11 @@ class App extends Component {
     this.runInit();
   }
  
-  action = async() => {
+  onAction = async() => {
     const { contract, status } = this.state;
     this.getstatus();
     let currentStatus = status;
+    console.log("status onAction:",currentStatus)
     if (currentStatus==="RegisteringVoters"){
       await contract.methods.B_proposalsRegistrationStart().send();
     }
@@ -136,7 +137,7 @@ class App extends Component {
           </Card>
           </div>
           <br></br>
-          <Bouton />
+          <Bouton onClick={this.onAction}/>
         <br></br>
       </div>
     )}

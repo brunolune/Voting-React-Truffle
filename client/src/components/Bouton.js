@@ -2,11 +2,20 @@ import React, { Component } from 'react';
 import Button from 'react-bootstrap/Button';
 
 class Bouton extends Component {
+
+    action = event => {
+        event.preventDefault();
+        this.props.onClick();
+    };
+
     render() {
         let currentStatus = this.props.status;
-        let titre = "Stop Voters Registration";
-        
-        if(currentStatus==="ProposalsRegistrationStarted"){
+        console.log("status Bouton=",currentStatus);
+        let titre = "";      
+        if (currentStatus==="RegisteringVoters"){
+            titre = "Stop Voters Registration";
+        }
+        else if(currentStatus==="ProposalsRegistrationStarted"){
             titre = "Start Proposals Registration";
         }
         else if(currentStatus==="ProposalsRegistrationEnded"){
