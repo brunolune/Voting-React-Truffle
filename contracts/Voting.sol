@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.7.6;
-
+pragma abicoder v2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 //@notice Ce contrat gère un système de vote pour une petite communauté. L'administrateur qui 
@@ -26,6 +26,7 @@ contract Voting is Ownable {
     uint votesCount; //pour compter le nb de votes
     
     Proposal[] public proposals;
+    string[] public proposalsarray;
     
     mapping(address => Voter) whitelist;
     address[] public whitelistarray;
@@ -71,7 +72,7 @@ contract Voting is Ownable {
     //@notice L'administrateur du vote commence la session d'enregistrement des propositions.
     function B_proposalsRegistrationStart() public onlyOwner{
         require(voteStatus==WorkflowStatus.RegisteringVoters, "Proposals Registration already started!");
-        require(votersCount>2,"Please add at least 1 voter!");
+        require(votersCount>=2,"Please add at least 1 voter!");
         emit WorkflowStatusChange(WorkflowStatus.RegisteringVoters,WorkflowStatus.ProposalsRegistrationStarted);
         emit ProposalsRegistrationStarted();
         voteStatus = WorkflowStatus.ProposalsRegistrationStarted;
@@ -83,6 +84,7 @@ contract Voting is Ownable {
         require(voteStatus==WorkflowStatus.ProposalsRegistrationStarted,"Proposals registration not open!");
         require(whitelist[msg.sender].isRegistered, "You can't make a proposal cause you're not registered");
         proposals.push(Proposal(_proposal,0));
+        proposalsarray.push(_proposal);
         emit ProposalRegistered(proposals.length-1);
     }
     
@@ -157,6 +159,10 @@ contract Voting is Ownable {
     
     function getwhitelistarray() public view returns(address[] memory){
         return whitelistarray;
+    }
+
+    function getproposalsarray() public view returns(string[] memory){
+        return proposalsarray;
     }
 
     //@dev retourne la phase du vote dans laquelle on se trouve

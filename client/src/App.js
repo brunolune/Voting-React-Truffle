@@ -12,9 +12,12 @@ import getWeb3 from "./getWeb3";
 import "./App.css";
 import Liste from "./components/Liste";
 import Bouton from "./components/Bouton";
+import Forme from "./components/Forme";
 
 class App extends Component {
-  state = { web3: null, accounts: null, contract: null, whitelist: null, owner:null, status:null};
+
+  state = { web3: null, accounts: null, contract: null, whitelist: null, owner:null, status:null, proposals:null, currentAccount:null};
+   
 
   componentWillMount = async () => {
     try {
@@ -25,6 +28,7 @@ class App extends Component {
       // Utiliser web3 pour récupérer les comptes de l’utilisateur (MetaMask dans notre cas) 
       const accounts = await web3.eth.getAccounts();
       console.log("accounts[0]=",accounts[0])
+      this.setState({currentAccount:accounts[0]})
 
       // Récupérer l’instance du smart contract “Whitelist” avec web3 et les informations du déploiement du fichier (client/src/contracts/Whitelist.json)
       const networkId = await web3.eth.net.getId();
@@ -54,66 +58,114 @@ class App extends Component {
   };
 
   runInit = async() => {
-    const { contract } = this.state;
-  
+    const { contract,currentAccount } = this.state;
     // récupérer la liste des comptes autorisés
     const whitelist = await contract.methods.getwhitelistarray().call();
+    const proposals = await contract.methods.getproposalsarray().call();
     // Mettre à jour le state 
-    this.setState({ whitelist: whitelist });
+    this.setState({ whitelist: whitelist, proposals:proposals });
     this.getstatus();
+    // console.log("runInit accounts[0] avant=",accounts[0])
+    this.getCurrentAccount();
+    // console.log("runInit accounts[0] apres=",accounts[0])
     console.log("whitelist[0]=",whitelist[0]);
+    console.log("currentAccount in runInit=",currentAccount);
   }; 
 
   getstatus = async() => {
     const { contract } = this.state;
     const currentStatus = await contract.methods.getVoteStatus().call();
     this.setState({ status: currentStatus });
-    console.log("status:",currentStatus)
+    console.log("status ds getstatus:",currentStatus)
   }
 
-  whitelist = async() => {
-    const { contract } = this.state;
-    const address = this.address.value;
+  // whitelist = async() => {
+  //   const { contract, currentAccount} = this.state;
+  //   // console.log("whitelist accounts[0] avant=",accounts[0])
+  //   //this.getCurrentAccount();
+  //   // console.log("whitelist accounts[0] apres=",accounts[0])
     
-    // Interaction avec le smart contract pour ajouter un compte 
-    await contract.methods.A_votersRegistration(address).send();
-    // Récupérer la liste des comptes autorisés
+  //   const address = this.address.value;
+  //   console.log("currentAccount in whitelist=",currentAccount);
+  //   // Interaction avec le smart contract pour ajouter un compte 
+  //   await contract.methods.A_votersRegistration(address).send({from:currentAccount});
+  //   // Récupérer la liste des comptes autorisés
+  //   this.runInit();
+  // }
+  
+  onFormSubmit = async (term) => {
+    const { contract, currentAccount, status} = this.state;
+    
+    this.getCurrentAccount();
+    console.log("onFormSubmit currentAccount apres=",currentAccount)
+    // const address = this.address.value;
+    console.log("currentAccount in whitelist=",currentAccount);
+    if (status==="RegisteringVoters"){
+      await contract.methods.A_votersRegistration(term).send({from:currentAccount});
+    } 
+    else if (status==="ProposalsRegistrationStarted"){
+      await contract.methods.C_proposalRegistration(term).send({from:currentAccount});
+    }
     this.runInit();
   }
+
+
+
+
+  getCurrentAccount = async() => {
+    
+    window.ethereum.on('accountsChanged', (accounts) => {
+      // Time to reload your interface with accounts[0]!
+      // this.setState({accounts:accounts});
+      this.setState({currentAccount:accounts[0]});
+      console.log("currentAccount in getcurrentAccount=",accounts[0])
+    })
+    
+  }
+  
+  // proposals = async() => {
+  //   const { contract, accounts, currentAccount } = this.state;
+  //   const proposal = this.proposal.value;
+    
+  //   // Interaction avec le smart contract pour ajouter un compte 
+  //   await contract.methods.C_proposalsRegistration(proposal).send({from:accounts[0]});
+  //   // Récupérer la liste des comptes autorisés
+  //   this.runInit();
+  // }
  
   onAction = async() => {
-    const { contract, status } = this.state;
+    const { contract, status, accounts } = this.state;
     this.getstatus();
     let currentStatus = status;
     console.log("status onAction:",currentStatus)
     if (currentStatus==="RegisteringVoters"){
-      await contract.methods.B_proposalsRegistrationStart().send();
+      await contract.methods.B_proposalsRegistrationStart().send({from:accounts[0]});
     }
     else if(currentStatus==="ProposalsRegistrationStarted"){
-      await contract.methods.D_proposalsRegistrationTermination().send();
+      await contract.methods.D_proposalsRegistrationTermination().send({from:accounts[0]});
     }
     else if(currentStatus==="ProposalsRegistrationEnded"){
-      await contract.methods.E_votingTimeStart().send();
+      await contract.methods.E_votingTimeStart().send({from:accounts[0]});
     }
     else if(currentStatus==="VotingSessionStarted"){
-      await contract.methods.G_votingTimeTermination().send();
+      await contract.methods.G_votingTimeTermination().send({from:accounts[0]});
     }
     else if(currentStatus==="VotingSessionEnded"){
-      await contract.methods.G_votingTimeTermination().send();
+      await contract.methods.G_votingTimeTermination().send({from:accounts[0]});
     }
     else {
-      await contract.methods.H_CountVotes().send();
+      await contract.methods.H_CountVotes().send({from:accounts[0]});
     } 
   }
 
   render() {
-    const { whitelist, status } = this.state;
-    
+    const { whitelist, status, proposals, currentAccount} = this.state;
+        
     // const isOwner = (this.state.accounts[0]==whitelist[0]);
-    if (!this.state.web3 || !this.state.status) {
+    if (!this.state.web3 || this.state.status===undefined) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
-    else if (this.state.accounts[0]===this.state.owner) { //'0x75D846154589776adC82F8e94E0FF3BAF80fb06F'
+    else if (currentAccount===this.state.owner) { //'0x75D846154589776adC82F8e94E0FF3BAF80fb06F'
       return (
         <div className="App">
         <div>
@@ -121,9 +173,10 @@ class App extends Component {
             <hr></hr>
             <br></br>
         </div>
-        <Liste whitelist={whitelist} status={status}/>
+        <Liste whitelist={whitelist} proposals={proposals} status={status}/>
         <br></br>
-        <div style={{display: 'flex', justifyContent: 'center'}}>
+        <Forme onSubmit={this.onFormSubmit} status={status} />
+        {/* <div style={{display: 'flex', justifyContent: 'center'}}>
           <Card style={{ width: '50rem' }}>
             <Card.Header><strong>Autoriser un nouveau compte</strong></Card.Header>
             <Card.Body>
@@ -135,9 +188,9 @@ class App extends Component {
               <Button onClick={ this.whitelist } variant="dark" > Autoriser </Button>
             </Card.Body>
           </Card>
-          </div>
+          </div> */}
           <br></br>
-          <Bouton onClick={this.onAction}/>
+          <Bouton onClick={this.onAction} status={status}/>
         <br></br>
       </div>
     )}

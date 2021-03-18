@@ -8,8 +8,10 @@ class Liste extends Component {
     render() {
         let currentStatus = this.props.status;
         let titre = "list of proposals";
+        let liste = this.props.proposals;
         if (currentStatus==="RegisteringVoters"){
             titre = "list of voters";
+            liste = this.props.whitelist;
         } 
         return (
             <div>
@@ -26,8 +28,8 @@ class Liste extends Component {
                             </tr>
                             </thead>
                             <tbody>
-                            {this.props.whitelist !== null && 
-                                this.props.whitelist.map((a) => <tr><td>{a}</td></tr>)
+                            {liste !== null && 
+                                liste.map((a) => <tr><td>{a}</td></tr>)
                             }
                             </tbody>
                         </Table>
