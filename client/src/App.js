@@ -119,12 +119,12 @@ class App extends Component {
       await contract.methods.G_votingTimeTermination().send({from:currentAccount});
     }
     else if(currentStatus==="VotingSessionEnded"){
-      await contract.methods.G_votingTimeTermination().send({from:currentAccount});
-    }
-    else {
       await contract.methods.H_CountVotes().send({from:currentAccount});
       const results = await contract.methods.I_WinningProposalIds().call();
       console.log(results)
+    }
+    else {
+      console.log("C'est fini!")     
     } 
   }
 

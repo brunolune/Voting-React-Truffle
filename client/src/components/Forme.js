@@ -14,16 +14,22 @@ class Forme extends Component {
 
     render() {
         let currentStatus = this.props.status;
-        let titre = "Add Proposals";
+        let titre = "";
         if (currentStatus==="RegisteringVoters"){
             titre = "Add Voters";
         } 
         else if (currentStatus==="ProposalsRegistrationStarted"){
             titre = "Add Proposals";
         } 
+        // else if (currentStatus==="ProposalsRegistrationEnded"){
+        //     titre = "";
+        // } 
         else if (currentStatus==="VotingSessionStarted"){
             titre = "Vote for your favorite proposal (enter its number)";
         }
+        // else if (currentStatus==="VotingSessionEnded"){
+        //     titre = "";
+        // } 
         return (
             <div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
