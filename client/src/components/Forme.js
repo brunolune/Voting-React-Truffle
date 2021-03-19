@@ -18,6 +18,12 @@ class Forme extends Component {
         if (currentStatus==="RegisteringVoters"){
             titre = "Add Voters";
         } 
+        else if (currentStatus==="ProposalsRegistrationStarted"){
+            titre = "Add Proposals";
+        } 
+        else if (currentStatus==="VotingSessionStarted"){
+            titre = "Vote for your favorite proposal (enter its number)";
+        }
         return (
             <div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
