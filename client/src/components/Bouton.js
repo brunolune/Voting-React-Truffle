@@ -9,6 +9,11 @@ class Bouton extends Component {
     };
 
     render() {
+        // let color="dark";
+        // if (this.props.currentAccount===this.props.owner){
+        //     color="danger";
+        // }
+
         let currentStatus = this.props.status;
         console.log("status Bouton=",currentStatus);
         let titre = "";      
@@ -29,7 +34,7 @@ class Bouton extends Component {
         }
         return (
             <div>
-                <Button onClick={this.action} variant="dark" > {titre} </Button>
+                <Button onClick={this.action} variant={"danger"}> {titre} </Button>
             </div>
         );
     }

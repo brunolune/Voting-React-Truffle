@@ -96,11 +96,16 @@ class App extends Component {
   getCurrentAccount = async() => {
     await window.ethereum.on('accountsChanged', (accounts) => {
       // Time to reload your interface with accounts[0]!
-      this.setState({currentAccount:accounts[0]});
+      this.setState({currentAccount:accounts[0]},window.location.reload(true));
+
       console.log("currentAccount in getcurrentAccount=",accounts[0]);
     }) 
   }
   
+  // forceUpdateHandler(){
+  //   this.forceUpdate();
+  // };
+
   onAction = async() => {
     const { contract, status, currentAccount } = this.state;
     this.getstatus();
@@ -124,7 +129,7 @@ class App extends Component {
       console.log(results)
     }
     else {
-      console.log("C'est fini!")     
+      console.log("It is finished!")     
     } 
   }
 
@@ -146,7 +151,7 @@ class App extends Component {
         <br></br>
         <Forme onSubmit={this.onFormSubmit} status={status} />
         <br></br>
-        <Bouton onClick={this.onAction} status={status}/>
+        <Bouton onClick={this.onAction}  status={status}/>
         <br></br>
       </div>
     )}
