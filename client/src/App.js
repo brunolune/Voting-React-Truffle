@@ -1,12 +1,5 @@
 import React, { Component } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
-// import Button from 'react-bootstrap/Button';
-// import Form from 'react-bootstrap/Form';
-// import Card from 'react-bootstrap/Card';
-// import ListGroup from 'react-bootstrap/ListGroup';
-// import Table from 'react-bootstrap/Table';
-// import Whitelist from "./contracts/Whitelist.json";
-//import Migrations from ".contracts/Migrations.json";
 import Voting from "./contracts/Voting.json";
 import getWeb3 from "./getWeb3";
 import "./App.css";
@@ -16,7 +9,9 @@ import Forme from "./components/Forme";
 
 class App extends Component {
 
-  state = { web3: null, accounts: null, contract: null, whitelist: null, owner:null, status:null, proposals:null, currentAccount:null, results:null, resultsarray:null};
+  state = { web3: null, accounts: null, contract: null,
+     whitelist: null, owner:null, status:null, proposals:null,
+     revertError:null, currentAccount:null, resultsarray:null};
    
 
   componentWillMount = async () => {
@@ -39,18 +34,20 @@ class App extends Component {
       const instance = new web3.eth.Contract(
         Voting.abi,deployedNetwork.address
       );
-      console.log("contrat=",instance)
+      console.log("contrat=",instance);
+      web3.eth.handleRevert = true;
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
       const owner = await instance.methods.owner().call();
       console.log("owner=",owner);
       this.setState({ web3, accounts, contract:instance, owner:owner, currentAccount:accounts[0], proposals:[] }, this.runUpdate);      
-    } catch (error) {
+    } catch (err) {
       // Catch any errors for any of the above operations.
       alert(
         `Non-Ethereum browser detected. Can you please try to install MetaMask before starting.`,
       );
-      console.error(error);
+      console.error(err);
+      this.setState({revertError:err})
     }
   };
 
@@ -104,17 +101,9 @@ class App extends Component {
       }
     }
     catch(err){
-      console.log("Error!!!:",contract.handleRevert);
-
+      console.log("Error!!!:",err);
+      this.setState({revertError:err})
     }
-    // catch (error) {
-    //   contract.methods.myMethod(myParam).call({
-    //       from,
-    //       value,
-    //   }).then(result => { throw Error('unlikely to happen') })
-    //   .catch(revertReason => console.log({ revertReason }))
-    // }
-
     this.runUpdate();
   }
 
@@ -138,7 +127,7 @@ class App extends Component {
     console.log("status onAction:",currentStatus)
     try{
       if (currentStatus==="RegisteringVoters"){
-        await contract.methods.B_proposalsRegistrationStart().send({from:currentAccount});
+        await contract.methods.B_proposalsRegistrationStart().send({from:currentAccount})
       }
       else if(currentStatus==="ProposalsRegistrationStarted"){
         await contract.methods.D_proposalsRegistrationTermination().send({from:currentAccount});
@@ -149,7 +138,7 @@ class App extends Component {
       else if(currentStatus==="VotingSessionStarted"){
         await contract.methods.G_votingTimeTermination().send({from:currentAccount});
       }
-      else if(currentStatus==="VotingSessionEnded" ){ //|| currentStatus==="VotesTallied"
+      else if(currentStatus==="VotingSessionEnded"){ //|| currentStatus==="VotesTallied"
         await contract.methods.H_CountVotes().send({from:currentAccount});
         const results = await contract.methods.I_WinningProposalIds().call();
         const resultsarray = new Array(proposals.length).fill(false);
@@ -167,23 +156,21 @@ class App extends Component {
     }
     catch(err){
       alert("Error!!!:",err);
+      this.setState({revertError:err})
     }
     
 
   }
 
   render() {
-    const { whitelist, status, proposals, currentAccount, resultsarray, results} = this.state;
-    console.log("proposals",proposals)   
-    console.log("results dans render:",results) 
-    console.log("resultsarray dans render:",resultsarray);
+    const { whitelist, status, proposals, currentAccount, resultsarray} = this.state;    
+    
     if (!this.state.web3 || this.state.status===undefined) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
     else if (currentAccount===this.state.owner) {
       return (
-      <div className="App">
-          
+      <div className="App"> 
         <div>
             <h2 className="text-center">Voting Dapp</h2>
         </div>
@@ -192,13 +179,17 @@ class App extends Component {
             {status}
         </div>
         <div style={{marginTop: '75px'}}>
-          <Liste whitelist={whitelist} proposals={proposals} status={status} resultsarray={resultsarray} results={results}/>
+          <Liste whitelist={whitelist} proposals={proposals} status={status} resultsarray={resultsarray}/>
           <br></br>
           <Forme onSubmit={this.onFormSubmit} status={status} />
         </div>
-        <div style={{marginTop: '100px'}}></div>
-          <Bouton onClick={this.onAction}  status={status}/>
-        </div> 
+        <div style={{marginTop: '60px'}}></div>
+        <Bouton onClick={this.onAction}  status={status}/>
+        <br></br>
+        {/* <div class="alert alert-danger" role="alert" style={{width:'500px',margin:'auto'}}>
+            {errorRevert}
+        </div> */}
+      </div> 
     )}
     else if (currentAccount!==this.state.owner) {
       return (
@@ -211,10 +202,14 @@ class App extends Component {
               {status}
           </div>
           <div style={{marginTop: '75px'}}>
-            <Liste whitelist={whitelist} proposals={proposals} status={status} resultsarray={resultsarray} results={results}/>
+            <Liste whitelist={whitelist} proposals={proposals} status={status} resultsarray={resultsarray}/>
             <br></br>
             <Forme onSubmit={this.onFormSubmit} status={status}/>      
-          </div>  
+          </div> 
+          <br></br>
+          {/* <div class="alert alert-danger" role="alert" style={{width:'500px',margin:'auto'}}>
+            {errorRevert}
+          </div>  */}
         </div> 
       );
     }
