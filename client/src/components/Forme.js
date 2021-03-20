@@ -21,40 +21,43 @@ class Forme extends Component {
         else if (currentStatus==="ProposalsRegistrationStarted"){
             titre = "Add Proposals";
         } 
-        // else if (currentStatus==="ProposalsRegistrationEnded"){
-        //     titre = "";
-        // } 
         else if (currentStatus==="VotingSessionStarted"){
             titre = "Vote for your favorite proposal (enter its number)";
         }
-        // else if (currentStatus==="VotingSessionEnded"){
-        //     titre = "";
-        // } 
         return (
             <div>
-                <div style={{display: 'flex', justifyContent: 'center'}}>
-                <Card style={{ width: '50rem' }}>
-                    <Card.Header><strong>{titre}</strong></Card.Header>
-                    <Card.Body>
-                    {/* <Form.Group controlId="formAddress">
-                        <Form.Control type="text" id="address"
-                        ref={(input) => { this.address = input }}
-                        />
-                    </Form.Group> */}
-                    <form onSubmit={this.onFormSubmit}>
-                        <div className="field">
-                            <input
-                             type="text"
-                             value={this.state.term}
-                             onChange={e => this.setState({term:e.target.value})}
-                             />
-                        </div>
-                    </form>
+                 {(this.props.status === "RegisteringVoters" 
+                || this.props.status === "ProposalsRegistrationStarted"
+                || this.props.status === "VotingSessionStarted") && (
+                    <div style={{display: 'flex', justifyContent: 'center'}}>
+                        <Card style={{ width: '50rem' }}>
+                        <Card.Header><strong>{titre}</strong></Card.Header>
+                        <Card.Body>
+                        {/* <Form.Group controlId="formAddress">
+                            <Form.Control type="text" id="address"
+                            ref={(input) => { this.address = input }}
+                            />
+                        </Form.Group> */}
+                        <form onSubmit={this.onFormSubmit}>
+                            <div className="field">
+                                <input
+                                type="text"
+                                value={this.state.term}
+                                onChange={e => this.setState({term:e.target.value})}
+                                size='50'
+        
+                                />
+                            </div>
+                        </form>
 
-                    {/* <Button onClick={ this.whitelist } variant="dark" > Add </Button> */}
-                    </Card.Body>
-                </Card>
-                </div>                
+                        {/* <Button onClick={ this.whitelist } variant="dark" > Add </Button> */}
+                        </Card.Body>
+                    </Card>
+                    </div> 
+                     )
+                    }
+
+                               
             </div>
         );
     }

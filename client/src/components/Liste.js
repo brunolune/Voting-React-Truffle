@@ -7,12 +7,21 @@ class Liste extends Component {
     
     render() {
         let currentStatus = this.props.status;
-        let titre = "list of proposals";
+        let titre = "List of proposals";
         let liste = this.props.proposals;
+        let resultsarray= new Array(liste.length).fill(false);
+        let content = "Proposals"
         if (currentStatus==="RegisteringVoters"){
-            titre = "list of voters";
+            titre = "List of voters";
             liste = this.props.whitelist;
+            resultsarray = new Array(liste.length).fill(false);
+            content = "Voters"
         } 
+        if (currentStatus==="VotesTallied"){
+            resultsarray = this.props.resultsarray;
+            console.log("resultsarray dans Liste:",resultsarray);
+        }
+        
         return (
             <div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>
@@ -21,18 +30,44 @@ class Liste extends Component {
                     <Card.Body>
                     <ListGroup variant="flush">
                         <ListGroup.Item>
+                        {(this.props.status !== "VotesTallied") && (    
                         <Table striped bordered hover>
                             <thead>
                             <tr>
-                                <th>@</th>
+                                <th>#</th>
+                                <th>{content}</th>
                             </tr>
                             </thead>
-                            <tbody>
+                            <tbody>                            
                             {liste !== null && 
-                                liste.map((a) => <tr><td>{a}</td></tr>)
-                            }
+                                liste.map((a, id) => 
+                                    <tr style= {{'background':'white'}}> 
+                                    <td >{id}</td>
+                                    <td>{a}</td>
+                                    </tr>)
+                            }                 
                             </tbody>
                         </Table>
+                        )}
+                        {(this.props.status === "VotesTallied") && (    
+                        <Table striped bordered hover>
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>{content}</th>
+                            </tr>
+                            </thead> 
+                            <tbody>                            
+                            {liste !== null && 
+                                liste.map((a, id) => 
+                                    <tr style={ this.props.results === id ? {background:'red'} : {background:''}}>                                     
+                                    <td >{id}</td>
+                                    <td>{a}</td>
+                                    </tr>)
+                            }                 
+                            </tbody>
+                        </Table>
+                        )}
                         </ListGroup.Item>
                     </ListGroup>
                     </Card.Body>

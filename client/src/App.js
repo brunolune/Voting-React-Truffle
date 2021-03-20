@@ -16,7 +16,7 @@ import Forme from "./components/Forme";
 
 class App extends Component {
 
-  state = { web3: null, accounts: null, contract: null, whitelist: null, owner:null, status:null, proposals:null, currentAccount:null};
+  state = { web3: null, accounts: null, contract: null, whitelist: null, owner:null, status:null, proposals:null, currentAccount:null, results:null, resultsarray:null};
    
 
   componentWillMount = async () => {
@@ -44,7 +44,7 @@ class App extends Component {
       // example of interacting with the contract's methods.
       const owner = await instance.methods.owner().call();
       console.log("owner=",owner);
-      this.setState({ web3, accounts, contract:instance, owner:owner, currentAccount:accounts[0] }, this.runUpdate);      
+      this.setState({ web3, accounts, contract:instance, owner:owner, currentAccount:accounts[0], proposals:[] }, this.runUpdate);      
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -62,13 +62,24 @@ class App extends Component {
     // Mettre à jour le state 
     this.setState({ whitelist: whitelist, proposals:proposals });
     this.getstatus();
-    // console.log("runUpdate accounts[0] avant=",accounts[0])
     this.getCurrentAccount();
-    // console.log("runUpdate accounts[0] apres=",accounts[0])
+    // this.updateAnnounce();
     console.log("whitelist[0]=",whitelist[0]);
     console.log("currentAccount in runUpdate=",currentAccount);
   }; 
 
+  // updateAnnounce = async() => {
+  //   const { contract,currentAccount } = this.state;
+  //   let eventsArray = await contract.events.allEvents({
+  //     filter: {myIndexedParam: [20,23], myOtherIndexedParam: '0x123456789...'}, // Using an array means OR: e.g. 20 or 23
+  //     fromBlock: 0,
+  //     toBlock: 'latest'
+  // }, function(error, events){ console.log(events); })
+  // .then(function(events){
+  //     console.log(events) // same results as the optional callback above
+  // });
+
+  // }
   getstatus = async() => {
     const { contract } = this.state;
     const currentStatus = await contract.methods.getVoteStatus().call();
@@ -81,15 +92,29 @@ class App extends Component {
     this.getCurrentAccount();
     console.log("onFormSubmit currentAccount apres=",currentAccount)
     console.log("currentAccount in whitelist=",currentAccount);
-    if (status==="RegisteringVoters"){
-      await contract.methods.A_votersRegistration(term).send({from:currentAccount});
-    } 
-    else if (status==="ProposalsRegistrationStarted"){
-      await contract.methods.C_proposalRegistration(term).send({from:currentAccount});
+    try{
+      if (status==="RegisteringVoters"){
+        await contract.methods.A_votersRegistration(term).send({from:currentAccount});
+      } 
+      else if (status==="ProposalsRegistrationStarted"){
+        await contract.methods.C_proposalRegistration(term).send({from:currentAccount});
+      }
+      else if (status==="VotingSessionStarted"){
+        await contract.methods.F_vote(Number(term)).send({from:currentAccount});
+      }
     }
-    else if (status==="VotingSessionStarted"){
-      await contract.methods.F_vote(Number(term)).send({from:currentAccount});
+    catch(err){
+      console.log("Error!!!:",contract.handleRevert);
+
     }
+    // catch (error) {
+    //   contract.methods.myMethod(myParam).call({
+    //       from,
+    //       value,
+    //   }).then(result => { throw Error('unlikely to happen') })
+    //   .catch(revertReason => console.log({ revertReason }))
+    // }
+
     this.runUpdate();
   }
 
@@ -107,66 +132,90 @@ class App extends Component {
   // };
 
   onAction = async() => {
-    const { contract, status, currentAccount } = this.state;
+    const { contract, status, currentAccount, proposals } = this.state;
     this.getstatus();
     let currentStatus = status;
     console.log("status onAction:",currentStatus)
-    if (currentStatus==="RegisteringVoters"){
-      await contract.methods.B_proposalsRegistrationStart().send({from:currentAccount});
+    try{
+      if (currentStatus==="RegisteringVoters"){
+        await contract.methods.B_proposalsRegistrationStart().send({from:currentAccount});
+      }
+      else if(currentStatus==="ProposalsRegistrationStarted"){
+        await contract.methods.D_proposalsRegistrationTermination().send({from:currentAccount});
+      }
+      else if(currentStatus==="ProposalsRegistrationEnded"){
+        await contract.methods.E_votingTimeStart().send({from:currentAccount});
+      }
+      else if(currentStatus==="VotingSessionStarted"){
+        await contract.methods.G_votingTimeTermination().send({from:currentAccount});
+      }
+      else if(currentStatus==="VotingSessionEnded" ){ //|| currentStatus==="VotesTallied"
+        await contract.methods.H_CountVotes().send({from:currentAccount});
+        const results = await contract.methods.I_WinningProposalIds().call();
+        const resultsarray = new Array(proposals.length).fill(false);
+        for (var j = 0; j < results.length; j++) {
+          resultsarray[results[j]]=true;
+        }
+        this.getstatus();
+        this.setState({results:results,resultsarray:resultsarray});
+        console.log(results)
+        console.log(resultsarray)
+      }
+      else {
+        console.log("It is finished!")     
+      } 
     }
-    else if(currentStatus==="ProposalsRegistrationStarted"){
-      await contract.methods.D_proposalsRegistrationTermination().send({from:currentAccount});
+    catch(err){
+      alert("Error!!!:",err);
     }
-    else if(currentStatus==="ProposalsRegistrationEnded"){
-      await contract.methods.E_votingTimeStart().send({from:currentAccount});
-    }
-    else if(currentStatus==="VotingSessionStarted"){
-      await contract.methods.G_votingTimeTermination().send({from:currentAccount});
-    }
-    else if(currentStatus==="VotingSessionEnded"){
-      await contract.methods.H_CountVotes().send({from:currentAccount});
-      const results = await contract.methods.I_WinningProposalIds().call();
-      console.log(results)
-    }
-    else {
-      console.log("It is finished!")     
-    } 
+    
+
   }
 
   render() {
-    const { whitelist, status, proposals, currentAccount} = this.state;
-        
+    const { whitelist, status, proposals, currentAccount, resultsarray, results} = this.state;
+    console.log("proposals",proposals)   
+    console.log("results dans render:",results) 
+    console.log("resultsarray dans render:",resultsarray);
     if (!this.state.web3 || this.state.status===undefined) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
     else if (currentAccount===this.state.owner) {
       return (
-        <div className="App">
+      <div className="App">
+          
         <div>
             <h2 className="text-center">Voting Dapp</h2>
-            <hr></hr>
-            <br></br>
         </div>
-        <Liste whitelist={whitelist} proposals={proposals} status={status}/>
         <br></br>
-        <Forme onSubmit={this.onFormSubmit} status={status} />
-        <br></br>
-        <Bouton onClick={this.onAction}  status={status}/>
-        <br></br>
-      </div>
+        <div class="alert alert-success" role="alert">
+            {status}
+        </div>
+        <div style={{marginTop: '75px'}}>
+          <Liste whitelist={whitelist} proposals={proposals} status={status} resultsarray={resultsarray} results={results}/>
+          <br></br>
+          <Forme onSubmit={this.onFormSubmit} status={status} />
+        </div>
+        <div style={{marginTop: '100px'}}></div>
+          <Bouton onClick={this.onAction}  status={status}/>
+        </div> 
     )}
     else if (currentAccount!==this.state.owner) {
       return (
         <div className="App">
           <div>
               <h2 className="text-center">Voting Dapp</h2>
-              <hr></hr>
-              <br></br>
           </div>
-          <Liste whitelist={whitelist} proposals={proposals} status={status}/>
           <br></br>
-          <Forme onSubmit={this.onFormSubmit} status={status}/>      
-        </div>   
+          <div class="alert alert-success" role="alert" >
+              {status}
+          </div>
+          <div style={{marginTop: '75px'}}>
+            <Liste whitelist={whitelist} proposals={proposals} status={status} resultsarray={resultsarray} results={results}/>
+            <br></br>
+            <Forme onSubmit={this.onFormSubmit} status={status}/>      
+          </div>  
+        </div> 
       );
     }
   }

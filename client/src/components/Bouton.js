@@ -34,7 +34,7 @@ class Bouton extends Component {
         }
         return (
             <div>
-                <Button onClick={this.action} variant={"danger"}> {titre} </Button>
+                <Button onClick={this.action} variant={"danger"} size="lg"> {titre} </Button>
             </div>
         );
     }
