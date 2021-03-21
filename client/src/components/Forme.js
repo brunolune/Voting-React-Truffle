@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-// import Button from 'react-bootstrap/Button';
-// import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
 
+// Permet d'entrer les electeurs autorises, ainsi que les propositions 
+// et les votes des utilisateurs.
 class Forme extends Component {
 
     state ={term:""};
@@ -11,7 +11,7 @@ class Forme extends Component {
         // event.preventDefault();
         this.props.onSubmit(this.state.term);
     }
-
+    //Ne s'affiche que pendant les phases d'utilisation
     render() {
         let currentStatus = this.props.status;
         let titre = "";
@@ -33,36 +33,25 @@ class Forme extends Component {
                         <Card style={{ width: '50rem' }}>
                         <Card.Header><strong>{titre}</strong></Card.Header>
                         <Card.Body>
-                        {/* <Form.Group controlId="formAddress">
-                            <Form.Control type="text" id="address"
-                            ref={(input) => { this.address = input }}
-                            />
-                        </Form.Group> */}
                         <form onSubmit={this.onFormSubmit}>
                             <div className="field">
                                 <input
                                 type="text"
                                 value={this.state.term}
                                 onChange={e => this.setState({term:e.target.value})}
-                                size='50'
-        
+                                size='50'       
                                 />
                             </div>
                         </form>
-
-                        {/* <Button onClick={ this.whitelist } variant="dark" > Add </Button> */}
                         </Card.Body>
-                    </Card>
+                        </Card>
                     </div> 
                      )
-                    }
-
-                               
+                    }                
             </div>
         );
     }
 }
-
 
 
 export default Forme;

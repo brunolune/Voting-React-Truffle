@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import Button from 'react-bootstrap/Button';
 
+
+// Bouton de controle de l'administrateur
 class Bouton extends Component {
 
     action = event => {
@@ -9,11 +11,7 @@ class Bouton extends Component {
     };
 
     render() {
-        // let color="dark";
-        // if (this.props.currentAccount===this.props.owner){
-        //     color="danger";
-        // }
-
+        //l'affichage change en fonction des phases du vote
         let currentStatus = this.props.status;
         console.log("status Bouton=",currentStatus);
         let titre = "";      
@@ -33,9 +31,9 @@ class Bouton extends Component {
             titre = "Count Votes";
         }
         return (
-            <div>
+            <>
                 <Button onClick={this.action} variant={"danger"} size="lg"> {titre} </Button>
-            </div>
+            </>
         );
     }
 }

@@ -1,3 +1,5 @@
+let instance = await Voting.at("0x52CdD3dF9902722596E361Fd8A3249d75137bfcE");
+let accounts = await web3.eth.getAccounts()
 instance.A_votersRegistration(accounts[1],{from:accounts[0]})
 instance.A_votersRegistration(accounts[2],{from:accounts[0]})
 instance.A_votersRegistration(accounts[3],{from:accounts[0]})

@@ -7,13 +7,16 @@ import Liste from "./components/Liste";
 import Bouton from "./components/Bouton";
 import Forme from "./components/Forme";
 
+// Appli Voting-Dapp du groupe 6: Bruno, Samuel et Liedel.
+// Dapp Gestion d'un système de Vote. 
+// Défi Alyra Ecole Blockchain (03/2021).
+
 class App extends Component {
 
   state = { web3: null, accounts: null, contract: null,
      whitelist: null, owner:null, status:null, proposals:null,
      revertError:null, currentAccount:null, resultsarray:null};
    
-
   componentWillMount = async () => {
     try {
       // Récupérer le provider web3
@@ -22,27 +25,23 @@ class App extends Component {
   
       // Utiliser web3 pour récupérer les comptes de l’utilisateur (MetaMask dans notre cas) 
       const accounts = await web3.eth.getAccounts();
-      console.log("accounts[0]=",accounts[0])
+      // On initialise currentAccount avec accounts[0]
       this.setState({currentAccount:accounts[0]})
 
-      // Récupérer l’instance du smart contract “Whitelist” avec web3 et les informations du déploiement du fichier (client/src/contracts/Whitelist.json)
+      // Récupérer l’instance du smart contract à partir de l'artifact JSON
       const networkId = await web3.eth.net.getId();
-      console.log("networkId=",networkId)
-
       const deployedNetwork = Voting.networks[networkId];
       console.log("deployedNetwork=",deployedNetwork)
       const instance = new web3.eth.Contract(
         Voting.abi,deployedNetwork.address
       );
-      console.log("contrat=",instance);
+      // Pour recuperer les raisons de revert dans les messages d'erreur
       web3.eth.handleRevert = true;
-      // Set web3, accounts, and contract to the state, and then proceed with an
-      // example of interacting with the contract's methods.
+      // Enregistre web3, accounts, l'instance du contract, ainsi que d'autres variables d'état dans le state
       const owner = await instance.methods.owner().call();
       console.log("owner=",owner);
       this.setState({ web3, accounts, contract:instance, owner:owner, currentAccount:accounts[0], proposals:[] }, this.runUpdate);      
     } catch (err) {
-      // Catch any errors for any of the above operations.
       alert(
         `Non-Ethereum browser detected. Can you please try to install MetaMask before starting.`,
       );
@@ -52,19 +51,22 @@ class App extends Component {
   };
 
   runUpdate = async() => {
-    const { contract,currentAccount } = this.state;
-    // récupérer la liste des comptes autorisés
+    const { contract} = this.state;
+    // récupére la liste des comptes des électeurs autorisés
     const whitelist = await contract.methods.getwhitelistarray().call();
+    // recupere la liste des propositions faites
     const proposals = await contract.methods.getproposalsarray().call();
-    // Mettre à jour le state 
+    // met à jour le state pour whitelist et proposals
     this.setState({ whitelist: whitelist, proposals:proposals });
+    // met à jour le status
     this.getstatus();
+    // met à jour le currentAccount
     this.getCurrentAccount();
-    // this.updateAnnounce();
-    console.log("whitelist[0]=",whitelist[0]);
-    console.log("currentAccount in runUpdate=",currentAccount);
+    // Gestion des événements pas terminée
+    // this.updateAnnounce(); 
   }; 
 
+  //Gestion des événements pas terminée
   // updateAnnounce = async() => {
   //   const { contract,currentAccount } = this.state;
   //   let eventsArray = await contract.events.allEvents({
@@ -75,8 +77,9 @@ class App extends Component {
   // .then(function(events){
   //     console.log(events) // same results as the optional callback above
   // });
-
   // }
+
+  // Recupere le status du contrat
   getstatus = async() => {
     const { contract } = this.state;
     const currentStatus = await contract.methods.getVoteStatus().call();
@@ -84,11 +87,10 @@ class App extends Component {
     console.log("status ds getstatus:",currentStatus)
   }
 
+  // Envoie les informations entrées dans la forme vers la blockchain (voters, proposals, votes)
   onFormSubmit = async (term) => {
     const { contract, currentAccount, status} = this.state;
     this.getCurrentAccount();
-    console.log("onFormSubmit currentAccount apres=",currentAccount)
-    console.log("currentAccount in whitelist=",currentAccount);
     try{
       if (status==="RegisteringVoters"){
         await contract.methods.A_votersRegistration(term).send({from:currentAccount});
@@ -107,24 +109,21 @@ class App extends Component {
     this.runUpdate();
   }
 
+  // récupère le compte Metamask courant de l'utilisateur 
   getCurrentAccount = async() => {
     await window.ethereum.on('accountsChanged', (accounts) => {
-      // Time to reload your interface with accounts[0]!
+      // force un rafraichissement de l'appli après un changement de compte
       this.setState({currentAccount:accounts[0]},window.location.reload(true));
-
+      // log le changement de compte dans la console
       console.log("currentAccount in getcurrentAccount=",accounts[0]);
     }) 
   }
   
-  // forceUpdateHandler(){
-  //   this.forceUpdate();
-  // };
-
+  // gestion des actions de l'administrateur sur le bouton de controle
   onAction = async() => {
     const { contract, status, currentAccount, proposals } = this.state;
     this.getstatus();
     let currentStatus = status;
-    console.log("status onAction:",currentStatus)
     try{
       if (currentStatus==="RegisteringVoters"){
         await contract.methods.B_proposalsRegistrationStart().send({from:currentAccount})
@@ -141,12 +140,15 @@ class App extends Component {
       else if(currentStatus==="VotingSessionEnded"){ //|| currentStatus==="VotesTallied"
         await contract.methods.H_CountVotes().send({from:currentAccount});
         const results = await contract.methods.I_WinningProposalIds().call();
+        // création d'un tableau de booléens pour l'affichage des résultats dans la Liste
         const resultsarray = new Array(proposals.length).fill(false);
         for (var j = 0; j < results.length; j++) {
           resultsarray[results[j]]=true;
         }
+        //mise à jour du status
         this.getstatus();
         this.setState({results:results,resultsarray:resultsarray});
+        // log les résultats dans la console 
         console.log(results)
         console.log(resultsarray)
       }
@@ -162,12 +164,13 @@ class App extends Component {
 
   }
 
+  // Affichage
   render() {
     const { whitelist, status, proposals, currentAccount, resultsarray} = this.state;    
-    
+    // attends la connection à la blockchain
     if (!this.state.web3 || this.state.status===undefined) {
       return <div>Loading Web3, accounts, and contract...</div>;
-    }
+    } // affichage pour l'administrateur
     else if (currentAccount===this.state.owner) {
       return (
       <div className="App"> 
@@ -190,7 +193,7 @@ class App extends Component {
             {errorRevert}
         </div> */}
       </div> 
-    )}
+    )} //affichage pour les utilisateurs
     else if (currentAccount!==this.state.owner) {
       return (
         <div className="App">

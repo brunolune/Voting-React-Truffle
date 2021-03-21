@@ -3,16 +3,20 @@ import Card from 'react-bootstrap/Card';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Table from 'react-bootstrap/Table';
 
+// Component Liste sert pour l'affichage des listes 
+//d'électeurs autorisés et des propositions
 class Liste extends Component {
     
     render() {
+        //L'affichage change en fonction des phases du vote
         let currentStatus = this.props.status;
         let titre = "List of proposals";
         let liste = this.props.proposals;
+        //resultsarray doit être défini pour l'affichage avant les résultats 
         let resultsarray= new Array(liste.length).fill(false);
         let content = "Proposals";
         if (currentStatus==="RegisteringVoters"){
-            titre = "List of voters";
+            titre = "List of Voters";
             liste = this.props.whitelist;
             resultsarray = new Array(liste.length).fill(false);
             content = "Voters";
@@ -20,12 +24,8 @@ class Liste extends Component {
         if (currentStatus==="VotesTallied"){
             titre= "Winning Proposals";
             resultsarray = this.props.resultsarray;
-            // console.log("resultsarray dans Liste:",resultsarray);
         }
-       
-        // resultsarray=[false,true,true,false];
-        // console.log(resultsarray)
-      
+        //affichage des résultats en changeant le background des propositions gagnantes
         return (
             <div>
                 <div style={{display: 'flex', justifyContent: 'center'}}>

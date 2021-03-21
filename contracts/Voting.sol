@@ -156,11 +156,11 @@ contract Voting is Ownable {
         //@dev on retourne un tableau avec les indices des propositions gagnantes
         return winningProposalIds[winningProposalId];
     }
-    
+    //@notice permet de récupérer whitelist à partir de la page web
     function getwhitelistarray() public view returns(address[] memory){
         return whitelistarray;
     }
-
+    //@notice permet de récupérer proposals à partir de la page web
     function getproposalsarray() public view returns(string[] memory){
         return proposalsarray;
     }
