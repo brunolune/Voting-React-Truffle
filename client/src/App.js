@@ -21,8 +21,7 @@ class App extends Component {
     try {
       // Récupérer le provider web3
       const web3 = await getWeb3();
-      console.log("web3=",web3)
-  
+        
       // Utiliser web3 pour récupérer les comptes de l’utilisateur (MetaMask dans notre cas) 
       const accounts = await web3.eth.getAccounts();
       // On initialise currentAccount avec accounts[0]
