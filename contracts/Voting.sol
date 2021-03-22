@@ -28,7 +28,7 @@ contract Voting is Ownable {
     Proposal[] public proposals;
     string[] public proposalsarray;
     
-    mapping(address => Voter) whitelist;
+    mapping(address => Voter) public whitelist;
     address[] public whitelistarray;
     
     mapping (uint => uint[]) winningProposalIds;
@@ -61,8 +61,8 @@ contract Voting is Ownable {
     
     //@notice L'administrateur du vote enregistre une liste blanche d'électeurs identifiés par leur adresse Ethereum.
     function A_votersRegistration(address _address) public onlyOwner {
-        require(voteStatus==WorkflowStatus.RegisteringVoters, "Registration is over");
-        require(!whitelist[_address].isRegistered, "This address is already registered");
+        require(voteStatus==WorkflowStatus.RegisteringVoters, "Registration is over!");
+        require(!whitelist[_address].isRegistered, "This address is already registered!");
         whitelist[_address].isRegistered = true;
         whitelistarray.push(_address);
         votersCount++;
@@ -82,7 +82,7 @@ contract Voting is Ownable {
     function C_proposalRegistration(string memory _proposal) public {
         require(keccak256(abi.encodePacked((_proposal)))!=keccak256(abi.encodePacked((""))),"Your proposal is empty!");
         require(voteStatus==WorkflowStatus.ProposalsRegistrationStarted,"Proposals registration not open!");
-        require(whitelist[msg.sender].isRegistered, "You can't make a proposal cause you're not registered");
+        require(whitelist[msg.sender].isRegistered, "You can't make a proposal cause you're not registered!");
         proposals.push(Proposal(_proposal,0));
         proposalsarray.push(_proposal);
         emit ProposalRegistered(proposals.length-1);
@@ -108,8 +108,8 @@ contract Voting is Ownable {
     //@notice Les électeurs inscrits votent pour leurs propositions préférées.
     function F_vote(uint propId) public {
         require(voteStatus == WorkflowStatus.VotingSessionStarted,"Vote not open!");
-        require(whitelist[msg.sender].isRegistered, "You can't vote cause you're not registered");
-        require(!whitelist[msg.sender].hasVoted, "You voted already");
+        require(whitelist[msg.sender].isRegistered, "You can't vote cause you're not registered!");
+        require(!whitelist[msg.sender].hasVoted, "You voted already!");
         
         whitelist[msg.sender].votedProposalId = propId;
         whitelist[msg.sender].hasVoted = true;
