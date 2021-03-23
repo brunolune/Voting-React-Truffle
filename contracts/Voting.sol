@@ -22,8 +22,8 @@ contract Voting is Ownable {
     }
     
     uint private winningProposalId;
-    uint votersCount; //pour compter le nb d'électeurs ajoutés
-    uint votesCount; //pour compter le nb de votes
+    uint public votersCount; //pour compter le nb d'électeurs ajoutés
+    uint public votesCount; //pour compter le nb de votes
     
     Proposal[] public proposals;
     string[] public proposalsarray;
@@ -82,7 +82,7 @@ contract Voting is Ownable {
     function C_proposalRegistration(string memory _proposal) public {
         require(keccak256(abi.encodePacked((_proposal)))!=keccak256(abi.encodePacked((""))),"Your proposal is empty!");
         require(voteStatus==WorkflowStatus.ProposalsRegistrationStarted,"Proposals registration not open!");
-        require(whitelist[msg.sender].isRegistered, "You can't make a proposal cause you're not registered!");
+        require(whitelist[msg.sender].isRegistered,"You can't make a proposal cause you're not registered!");
         proposals.push(Proposal(_proposal,0));
         proposalsarray.push(_proposal);
         emit ProposalRegistered(proposals.length-1);
