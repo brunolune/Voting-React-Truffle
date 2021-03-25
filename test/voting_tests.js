@@ -33,7 +33,7 @@ contract('Voting tests', function (accounts) {
     // getVoteStatus
 
     // Should revert when not owner
-    it('verifies A_votersRegistration reverts when not owner', async function () {
+    it('verifies functions reverts when not owner', async function () {
         await (expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter1, {from: notOwner}), "Ownable: caller is not the owner"));
         await (expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: notOwner}), "Ownable: caller is not the owner"));
         await (expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: notOwner}), "Ownable: caller is not the owner"));
@@ -77,9 +77,13 @@ contract('Voting tests', function (accounts) {
         "This address is already registered"));
     });
 
+    it('verifies at least 1 voter has been added before proposalsRegistrationStart', async function () {
+        await expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Please add at least 1 voter!");
+    });
+
     
     // WorkflowStatus tests    
-    it('verify revert if not proper voteStatus', async function () { 
+    it('verifies revert if not proper voteStatus and events', async function () { 
         //verify voteStatus
         let voteStatus = await this.VotingInstance.getVoteStatus();
         expect(voteStatus).to.equal("RegisteringVoters");
@@ -104,52 +108,65 @@ contract('Voting tests', function (accounts) {
         await this.VotingInstance.A_votersRegistration(authorizedVoter4, {from: owner});
         await this.VotingInstance.A_votersRegistration(authorizedVoter5, {from: owner});
         
-        await this.VotingInstance.B_proposalsRegistrationStart({from: owner});
+        let receipt =await this.VotingInstance.B_proposalsRegistrationStart({from: owner});
+        //verifies event
+        await expectEvent(receipt, "ProposalsRegistrationStarted");
+        await expectEvent(receipt, "WorkflowStatusChange",{previousStatus:new BN(0),newStatus:new BN(1)});
         //verify voteStatus
         voteStatus = await this.VotingInstance.getVoteStatus();
         expect(voteStatus).to.equal("ProposalsRegistrationStarted");
 
         //------------------tests of expected reverts during this phase----------------------
 
-        expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
-        expectRevert.unspecified(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
+        await expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
+        await expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
         // expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
         // expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
-        expectRevert(this.VotingInstance.F_vote(0,{from: owner}),"Vote not open!")
-        expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
-        expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
-        expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
+        await expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
+        await expectRevert(this.VotingInstance.F_vote(0,{from: owner}),"Vote not open!")
+        await expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
+        await expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
+        await expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
 
         //-------------------process to next phase-------------------------------------------
 
         await this.VotingInstance.C_proposalRegistration("p1",{from: owner});
-        await this.VotingInstance.C_proposalRegistration("p2",{from: owner});
+        receipt = await this.VotingInstance.C_proposalRegistration("p2",{from: owner});
+        expectEvent(receipt, "ProposalRegistered", {proposalId:new BN(1)});
 
-        await this.VotingInstance.D_proposalsRegistrationTermination({from: owner});
+        receipt = await this.VotingInstance.D_proposalsRegistrationTermination({from: owner});
+        //verifies event
+        await expectEvent(receipt, "WorkflowStatusChange",{previousStatus:new BN(1),newStatus:new BN(2)});
+        await expectEvent(receipt, "ProposalsRegistrationEnded");        
+        await expectEvent(receipt, "WorkflowStatusChange",{previousStatus:new BN(2),newStatus:new BN(3)});
+
         //verify voteStatus
         voteStatus = await this.VotingInstance.getVoteStatus();
         expect(voteStatus).to.equal("ProposalsRegistrationEnded");
 
         //------------------tests of expected reverts during this phase----------------------
 
-        expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
-        expectRevert.unspecified(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
-        expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
+        await expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
+        await expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
         // expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
-        expectRevert(this.VotingInstance.F_vote(0,{from: owner}),"Vote not open!")
-        expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
-        expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
-        expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
+        await expectRevert(this.VotingInstance.F_vote(0,{from: owner}),"Vote not open!")
+        await expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
+        await expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
+        await expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
 
         //-------------------process to next phase-------------------------------------------
 
-        await this.VotingInstance.E_votingTimeStart({from: owner});
+        receipt = await this.VotingInstance.E_votingTimeStart({from: owner});
+
+        //verifies event
+        await expectEvent(receipt, "VotingSessionStarted");
 
         await this.VotingInstance.F_vote(0,{from: owner});
         await this.VotingInstance.F_vote(1,{from: authorizedVoter1});
-        await this.VotingInstance.F_vote(1,{from: authorizedVoter2});
+        receipt = await this.VotingInstance.F_vote(1,{from: authorizedVoter2});
+        expectEvent(receipt, "Voted", {voter:authorizedVoter2,proposalId:new BN(1)});
 
         //verify voteStatus
         voteStatus = await this.VotingInstance.getVoteStatus();
@@ -157,19 +174,23 @@ contract('Voting tests', function (accounts) {
 
         //------------------tests of expected reverts during this phase----------------------
 
-        expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
-        expectRevert.unspecified(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
-        expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
+        await expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
+        await expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
+        await expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
         // expectRevert(this.VotingInstance.F_vote(0,{from: owner}),"Vote not open!")
         // expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
-        expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
-        expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
+        await expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
+        await expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
 
         //-------------------process to next phase-------------------------------------------
 
-        await this.VotingInstance.G_votingTimeTermination({from: owner})
+        receipt = await this.VotingInstance.G_votingTimeTermination({from: owner})
+        
+        //verifies event
+        await expectEvent(receipt, "WorkflowStatusChange",{previousStatus:new BN(3),newStatus:new BN(4)});
+        await expectEvent(receipt, "VotingSessionEnded");
 
         //verify voteStatus
         voteStatus = await this.VotingInstance.getVoteStatus();
@@ -177,19 +198,23 @@ contract('Voting tests', function (accounts) {
 
         //------------------tests of expected reverts during this phase----------------------
 
-        expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
-        expectRevert.unspecified(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
-        expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
-        expectRevert(this.VotingInstance.F_vote(0,{from: authorizedVoter3}),"Vote not open!")
-        expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
+        await expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
+        await expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
+        await expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
+        await expectRevert(this.VotingInstance.F_vote(0,{from: authorizedVoter3}),"Vote not open!")
+        await expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
         // expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
-        expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
+        await expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
 
         //-------------------process to next phase-------------------------------------------
 
-        await this.VotingInstance.H_CountVotes({from: owner})
+        receipt = await this.VotingInstance.H_CountVotes({from: owner})
+
+        //verifies event
+        await expectEvent(receipt, "VotesTallied");
+        await expectEvent(receipt, "WorkflowStatusChange",{previousStatus:new BN(4),newStatus:new BN(5)});
 
         //verify voteStatus
         voteStatus = await this.VotingInstance.getVoteStatus();
@@ -197,20 +222,20 @@ contract('Voting tests', function (accounts) {
 
         //------------------tests of expected reverts during this phase----------------------
 
-        expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
-        expectRevert.unspecified(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
-        expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
-        expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
-        expectRevert(this.VotingInstance.F_vote(0,{from: authorizedVoter3}),"Vote not open!")
-        expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
-        expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
+        await expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter6, {from: owner}),"Registration is over!");
+        await expectRevert(this.VotingInstance.B_proposalsRegistrationStart({from: owner}),"Proposals Registration already started!");
+        await expectRevert(this.VotingInstance.C_proposalRegistration("p1",{from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.D_proposalsRegistrationTermination({from: owner}),"Proposals registration not open!")
+        await expectRevert(this.VotingInstance.E_votingTimeStart({from: owner}),"Proposals registration not ended!")
+        await expectRevert(this.VotingInstance.F_vote(0,{from: authorizedVoter3}),"Vote not open!")
+        await expectRevert(this.VotingInstance.G_votingTimeTermination({from: owner}),"Vote not open!")
+        await expectRevert(this.VotingInstance.H_CountVotes({from: owner}),"Counting votes not open!")
         //expectRevert(this.VotingInstance.I_WinningProposalIds(),"Votes not counted yet!")
 
     });
 
     //Proposals registration tests    
-    it('verify proposals are properly added and empty proposal causes revert', async function () {
+    it('verifies proposals are properly added and empty proposal causes revert', async function () {
         // need to add at least one voter
         await this.VotingInstance.A_votersRegistration(authorizedVoter1, {from: owner});
         // await this.VotingInstance.A_votersRegistration(authorizedVoter2, {from: owner});
@@ -234,8 +259,8 @@ contract('Voting tests', function (accounts) {
         await truffleAssert.reverts(this.VotingInstance.C_proposalRegistration("p3",{from: nonAuthorized}),
         "You can't make a proposal cause you're not registered!");
     }); 
+
     
-        
 //   it('getAddresses', async function () { 
 //     // 1er appel
 //     await this.WhitelistInstance.whitelist(whitelisted, {from: owner});
