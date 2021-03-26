@@ -260,6 +260,42 @@ contract('Voting tests', function (accounts) {
         "You can't make a proposal cause you're not registered!");
     }); 
 
+
+
+
+    // WorkflowStatus tests    
+    it('verifies countVotes works properly', async function () { 
+       
+        //Admin adds 5 voters        
+        await this.VotingInstance.A_votersRegistration(authorizedVoter1, {from: owner});
+        await this.VotingInstance.A_votersRegistration(authorizedVoter2, {from: owner});
+        await this.VotingInstance.A_votersRegistration(authorizedVoter3, {from: owner});
+        await this.VotingInstance.A_votersRegistration(authorizedVoter4, {from: owner});
+        await this.VotingInstance.A_votersRegistration(authorizedVoter5, {from: owner});
+        //Admin starts proposals registration
+        await this.VotingInstance.B_proposalsRegistrationStart({from: owner});
+        //Admin and authorized voters add several proposals
+        await this.VotingInstance.C_proposalRegistration("p1",{from: owner});
+        await this.VotingInstance.C_proposalRegistration("p2",{from: authorizedVoter1});
+        await this.VotingInstance.C_proposalRegistration("p3",{from: authorizedVoter2});
+        await this.VotingInstance.C_proposalRegistration("p4",{from: authorizedVoter3});
+        //Admin terminates proposals registration then starts voting session
+        await this.VotingInstance.D_proposalsRegistrationTermination({from: owner});
+        await this.VotingInstance.E_votingTimeStart({from: owner});
+        //Admin and voters vote
+        await this.VotingInstance.F_vote(0,{from: owner});
+        await this.VotingInstance.F_vote(1,{from: authorizedVoter1});
+        await this.VotingInstance.F_vote(1,{from: authorizedVoter2});
+        await this.VotingInstance.F_vote(3,{from: authorizedVoter3});
+        await this.VotingInstance.F_vote(3,{from: authorizedVoter4});
+        //Admin ends voting session and call countVotes
+        await this.VotingInstance.G_votingTimeTermination({from: owner});
+        await this.VotingInstance.H_CountVotes({from: owner});
+        let results = await this.VotingInstance.I_WinningProposalIds();
+        let tab= [new BN(1),new BN(3)];
+        expect(results.toString()).to.equal(tab.toString());
+
+    });
     
 //   it('getAddresses', async function () { 
 //     // 1er appel
