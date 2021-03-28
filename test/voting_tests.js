@@ -21,17 +21,6 @@ contract('Voting tests', function (accounts) {
         this.VotingInstance = await Voting.new({from: owner});
     });
 
-    // A_votersRegistration
-    // B_proposalsRegistrationStart
-    // C_proposalRegistration
-    // D_proposalsRegistrationTermination
-    // E_votingTimeStart
-    // F_vote
-    // G_votingTimeTermination
-    // H_CountVotes
-    // I_WinningProposalIds
-    // getVoteStatus
-
     // Should revert when not owner
     it('verifies functions reverts when not owner', async function () {
         await (expectRevert(this.VotingInstance.A_votersRegistration(authorizedVoter1, {from: notOwner}), "Ownable: caller is not the owner"));
@@ -342,16 +331,4 @@ contract('Voting tests', function (accounts) {
 
     });
     
-//   it('getAddresses', async function () { 
-//     // 1er appel
-//     await this.WhitelistInstance.whitelist(whitelisted, {from: owner});
-//     await this.WhitelistInstance.whitelist(whitelisted2, {from: owner});
-
-//     let addresses = await this.WhitelistInstance.getAddresses(); 
-//     let tab = [whitelisted,whitelisted2];
-
-//     expect(addresses.toString()).to.equal(tab.toString());
-//     expect(addresses).to.eql(tab);
-//     expect(addresses).to.be.an('array').that.includes(whitelisted);
-//   });
 });
