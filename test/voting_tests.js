@@ -260,7 +260,52 @@ contract('Voting tests', function (accounts) {
         "You can't make a proposal cause you're not registered!");
     }); 
 
-
+    // WorkflowStatus tests    
+    it('verifies F_Vote works properly', async function () { 
+       
+        //Admin adds 5 voters        
+        await this.VotingInstance.A_votersRegistration(authorizedVoter1, {from: owner});
+        await this.VotingInstance.A_votersRegistration(authorizedVoter2, {from: owner});
+        //Admin starts proposals registration
+        await this.VotingInstance.B_proposalsRegistrationStart({from: owner});
+        //Admin and authorized voters add several proposals
+        await this.VotingInstance.C_proposalRegistration("p1",{from: owner});
+        await this.VotingInstance.C_proposalRegistration("p2",{from: authorizedVoter1});
+        await this.VotingInstance.C_proposalRegistration("p3",{from: authorizedVoter2});        
+        //Admin terminates proposals registration then starts voting session
+        await this.VotingInstance.D_proposalsRegistrationTermination({from: owner});
+        await this.VotingInstance.E_votingTimeStart({from: owner});
+        //verifies nonAuthorized cannot vote
+        await expectRevert(this.VotingInstance.F_vote(1,{from: nonAuthorized }),
+        "You can't vote cause you're not registered!");
+        // before the vote
+        let authorizedVoter1Before = await this.VotingInstance.whitelist(authorizedVoter1);
+        expect(authorizedVoter1Before.votedProposalId).to.be.bignumber.equal(new BN(0));
+        expect(authorizedVoter1Before.hasVoted).to.be.false;
+        let votesCountBefore = await this.VotingInstance.votesCount();
+        // many steps to access proposal[1].voteCount before the vote ...
+        let proposalsBefore = await this.VotingInstance.proposals;
+        let proposal1Before = await proposalsBefore(1);
+        let proposal1VoteCountBefore = await proposal1Before.voteCount;
+        //authorizedVoter1 votes
+        await this.VotingInstance.F_vote(1,{from: authorizedVoter1});
+        //after the vote
+        //verifies that the vote is properly registered in Voter's struct in whitelist
+        let authorizedVoter1After = await this.VotingInstance.whitelist(authorizedVoter1);
+        expect(authorizedVoter1After.votedProposalId).to.be.bignumber.equal(new BN(1));
+        expect(authorizedVoter1After.hasVoted).to.be.true;
+        let votesCountAfter = await this.VotingInstance.votesCount();
+        // many steps to access proposal[1].voteCount after the vote ...
+        let proposalsAfter = await this.VotingInstance.proposals;
+        let proposal1After = await proposalsAfter(1);
+        let proposal1VoteCountAfter = await proposal1After.voteCount;
+        //verifies votesCount is properly incremented
+        expect(votesCountAfter).to.be.bignumber.equal(votesCountBefore.add(new BN(1)));
+        //verifies voteCount of The Proposal is properly incremented
+        expect(proposal1VoteCountAfter).to.be.bignumber.equal(proposal1VoteCountBefore.add(new BN(1)));
+        //verifies authorizedVoter1 cannot vote again
+        await expectRevert(this.VotingInstance.F_vote(2,{from: authorizedVoter1}),"You voted already!");
+    }); 
 
 
     // WorkflowStatus tests    
